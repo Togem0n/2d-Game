@@ -14,6 +14,8 @@
 function MyGame() {    
     // The camera to view the scene
     this.logo1 = "assets/logo1.png"
+    this.kBg = "assets/bg.png";
+    this.kBgNormal = "assets/bg_normal.png";
     this.mCamera = null;
     this.msquare1 = null;
     this.msquare2 = null;
@@ -25,26 +27,43 @@ function MyGame() {
     this.msquare8 = null;
     this.msquare9 = null;
     this.mHero = null;
+    this.mItem1 = null; //加速道具
+    this.mItem2 = null; //减速道具
+    this.mItem3 = null; //放大灯道具
+    this.mItem4 = null;
+    this.mItem5 = null; //瞬移
+    
     this.BboxSet = null;
+    
+    this.mItem1BBox = null;
+    this.mItem2BBox = null;
+    this.mItem3BBox = null;
+    this.mItem4BBox = null;
+    this.mItem5BBox = null;
     
     //光
     this.heroLight = null;
-    
     this.heroCamera = null;
-    this.kDelta = 5;
+    this.mGlobalLightSet = null;
+    this.mBg = null;
     
-    this.kDelta = 0.5;
+    this.kDelta = 0.3;
+    this.deltaV = 0.1;
     this.mMsg = null;
-    this.mMsg2 = null;
 }
 gEngine.Core.inheritPrototype(MyGame, Scene);
 
 
 MyGame.prototype.loadScene = function () {
     gEngine.Textures.loadTexture(this.logo1);
+    gEngine.Textures.loadTexture(this.kBg);
+    gEngine.Textures.loadTexture(this.kBgNormal);
 };
 
 MyGame.prototype.unloadScene = function () {
+    gEngine.Textures.unloadTexture(this.logo1);
+    gEngine.Textures.unloadTexture(this.kBg);
+    gEngine.Textures.unloadTexture(this.kBgNormal);
 
 };
 
@@ -55,54 +74,26 @@ MyGame.prototype.initialize = function () {
         100,                     // width of camera
         [0, 0, 630, 630]         // viewport (orgX, orgY, width, height)
     );
-    this.mCamera.setBackgroundColor([1,0.98,0.85,1]);
-    
-    this.heroCamera = new Camera(
-        vec2.fromValues(50, 50), // position of the camera
-        100,                     // width of camera
-        [0, 0, 63, 63]         // viewport (orgX, orgY, width, height)
-    );
-    this.heroCamera.setBackgroundColor([1, 1, 1, 1]);
-    
-    this.heroLight = new Light();
-    
-    this.heroLight.setLightType(Light.eLightType.ePointLight);
-    this.heroLight.setColor([1, 1, 1, 1]);
-    //this.heroLight.setXPos(this.mHero.getXform().getXPos());
-//    this.heroLight.setYPos(x[1]);
-//    this.heroLight.setZPos(5);
-//    this.heroLight.setDirection([0, 0, -1]);
-//    this.heroLight.setNear(8);
-//    this.heroLight.setFar(14);
-//    this.heroLight.setInner(0.1);
-//    this.heroLight.setOuter(-0.05);
-//    this.heroLight.setIntensity(3);
-//    this.heroLight.setDropOff(1.0);
-//    this.heroLight.setLightTo(false);
-    
-            // sets the background to gray
+    this.mCamera.setBackgroundColor([1,0.98,0.85,1]);   
     gEngine.DefaultResources.setGlobalAmbientIntensity(3);
     
     var r1 = new Renderable();
     r1.setColor([0, 0, 0, 1]);
     this.msquare1 = new GameObject(r1);
     this.msquare1.getXform().setPosition(55, 15);
-    this.msquare1.getXform().setSize(90, 30);
-    //this.msquare1.setColor([0, 0, 0, 1]); 
+    this.msquare1.getXform().setSize(90, 30); 
     
     var r2 = new Renderable();
     r2.setColor([0, 0, 0, 1]);
     this.msquare2 = new GameObject(r2);
     this.msquare2.getXform().setPosition(10, 70);
     this.msquare2.getXform().setSize(20, 60);
-    //this.msquare2.setColor([0, 0, 0, 1]); 
     
     var r3 = new Renderable();
     r3.setColor([0, 0, 0, 1]);
     this.msquare3 = new GameObject(r3);
     this.msquare3.getXform().setPosition(35, 95);
     this.msquare3.getXform().setSize(30, 10);
-    //this.msquare3.setColor([0, 0, 0, 1]); 
     
     var r4 = new Renderable();
     r4.setColor([0, 0, 0, 1]);
@@ -141,6 +132,27 @@ MyGame.prototype.initialize = function () {
 
     this.mHero = new Hero(this.logo1);
     
+    //道具1
+    this.mItem1 = new Item(this.logo1);
+    this.mItem1.getXform().setXPos(35);
+    this.mItem1.getXform().setYPos(35);
+    
+    this.mItem2 = new Item(this.logo1);
+    this.mItem2.getXform().setXPos(45);
+    this.mItem2.getXform().setYPos(35);
+    
+    this.mItem3 = new Item(this.logo1);
+    this.mItem3.getXform().setXPos(55);
+    this.mItem3.getXform().setYPos(35);
+    
+    this.mItem4 = new Item(this.logo1);
+    this.mItem4.getXform().setXPos(65);
+    this.mItem4.getXform().setYPos(35);
+    
+    this.mItem5 = new Item(this.logo1);
+    this.mItem5.getXform().setXPos(75);
+    this.mItem5.getXform().setYPos(35);
+    
     var sq1Bbox = this.msquare1.getBBox();
     var sq2Bbox = this.msquare2.getBBox();
     var sq3Bbox = this.msquare3.getBBox();
@@ -160,7 +172,42 @@ MyGame.prototype.initialize = function () {
     this.BboxSet.addToSet(sq7Bbox);
     this.BboxSet.addToSet(sq8Bbox);
     
-   
+    this.mMsg = new FontRenderable("Status Message");
+    this.mMsg.setColor([1, 0, 0, 1]);
+    this.mMsg.getXform().setPosition(5, 5);
+    this.mMsg.setTextHeight(3);
+     
+    // 光效
+    this._initializeLights(this.mHero.getXform().getPosition());
+ 
+    var bgR = new IllumRenderable(this.kBg, this.kBgNormal);
+    bgR.setElementPixelPositions(0, 1024, 0, 1024);
+    bgR.getXform().setSize(100, 100);
+    bgR.getXform().setPosition(50, 50);
+    //bgR.getMaterial().setSpecular([1, 0, 0, 1]);
+    var i;
+    for (i = 0; i < 1; i++) {
+        bgR.addLight(this.mGlobalLightSet.getLightAt(i));   // all the lights
+    }
+    this.mBg = new GameObject(bgR);  
+    
+//    var herolight = new Light();
+//    herolight.setLightType(Light.eLightType.ePointLight);
+//    herolight.setColor([1, 1, 0, 1]);
+//    herolight.setXPos(this.mHero.getXform().getXPos());
+//    herolight.setYPos(this.mHero.getXform().getYPos());      
+//    herolight.setZPos(5);
+//    herolight.setDirection([0, 0, -1]);
+//    herolight.setNear(8);
+//    herolight.setFar(20);
+//    herolight.setInner(0.1);
+//    herolight.setOuter(0.2);
+//    herolight.setIntensity(5); 
+     this.mItem1BBox = this.mItem1.getBBox();
+     this.mItem2BBox = this.mItem2.getBBox();
+     this.mItem3BBox = this.mItem3.getBBox();
+     this.mItem4BBox = this.mItem4.getBBox();
+     this.mItem5BBox = this.mItem5.getBBox();
 };
 
 
@@ -170,6 +217,7 @@ MyGame.prototype.draw = function () {
     
     
     this.mCamera.setupViewProjection();
+    this.mBg.draw(this.mCamera);
     this.msquare1.draw(this.mCamera);
     this.msquare2.draw(this.mCamera);
     this.msquare3.draw(this.mCamera);
@@ -178,23 +226,26 @@ MyGame.prototype.draw = function () {
     this.msquare6.draw(this.mCamera);
     this.msquare7.draw(this.mCamera);
     this.msquare8.draw(this.mCamera);
+    
     this.mHero.draw(this.mCamera);
-    this.BboxSet.draw(this.mCamera);
+    this.mItem1.draw(this.mCamera);
+    this.mItem2.draw(this.mCamera); 
+    this.mItem3.draw(this.mCamera);
+    this.mItem4.draw(this.mCamera);
+    this.mItem5.draw(this.mCamera);
     
-    
-    //this.msquare9.draw(this.mCamera);
-    
+    this.mMsg.draw(this.mCamera);
 };
 
 MyGame.prototype.update = function () {
     this.mCamera.update();
     this.mHero.update();
-    this.heroCamera.update();
-    //this.BboxSet.update();
+    //this.mBg.update();
+    this.mMsg.setText(this.kDelta);
+
+    var v = this.mGlobalLightSet.getLightAt(0).getColor();
     
-//    var hBbox = this.mHero.getBBox();
-//    var sq1Bbox = this.msquare1.getBBox();
-    
+       
     
     var xform = this.mHero.getXform();
     if (gEngine.Input.isKeyPressed(gEngine.Input.keys.W) && this.mHero.getXform().getYPos() <= 98) {
@@ -217,9 +268,11 @@ MyGame.prototype.update = function () {
                 hBbox.intersectsBound(sq7Bbox) ||
                 hBbox.intersectsBound(sq8Bbox) 
                 ){
-            xform.incYPosBy(-this.kDelta);     
+            xform.incYPosBy(-this.kDelta);      
         }
-        
+        this.mGlobalLightSet.getLightAt(0).setXPos(this.mHero.getXform().getXPos());
+        this.mGlobalLightSet.getLightAt(0).setYPos(this.mHero.getXform().getYPos());
+            
     }
     if (gEngine.Input.isKeyPressed(gEngine.Input.keys.S) && this.mHero.getXform().getYPos() >= 2) {
         xform.incYPosBy(-this.kDelta);
@@ -248,6 +301,8 @@ MyGame.prototype.update = function () {
                 ){
             xform.incYPosBy(this.kDelta);     
         }
+        this.mGlobalLightSet.getLightAt(0).setXPos(this.mHero.getXform().getXPos());
+        this.mGlobalLightSet.getLightAt(0).setYPos(this.mHero.getXform().getYPos());
 
     }
     if (gEngine.Input.isKeyPressed(gEngine.Input.keys.A) && this.mHero.getXform().getXPos() >= 2) {
@@ -277,6 +332,8 @@ MyGame.prototype.update = function () {
                 ){
             xform.incXPosBy(this.kDelta);     
         }
+        this.mGlobalLightSet.getLightAt(0).setXPos(this.mHero.getXform().getXPos());
+        this.mGlobalLightSet.getLightAt(0).setYPos(this.mHero.getXform().getYPos());
     }
     if (gEngine.Input.isKeyPressed(gEngine.Input.keys.D) && this.mHero.getXform().getXPos() <= 98) {
         xform.incXPosBy(this.kDelta);
@@ -305,6 +362,61 @@ MyGame.prototype.update = function () {
                 ){
             xform.incXPosBy(-this.kDelta);     
         }
+        this.mGlobalLightSet.getLightAt(0).setXPos(this.mHero.getXform().getXPos());
+        this.mGlobalLightSet.getLightAt(0).setYPos(this.mHero.getXform().getYPos());
     }
     
+    
+    
+    // 道具一：加速
+    var hBbox = this.mHero.getBBox();
+    if(hBbox.intersectsBound(this.mItem1BBox) || gEngine.Input.isKeyPressed(gEngine.Input.keys.U)){
+        this.kDelta = 0.5;
+        this.mItem1.getXform().setXPos(-1);
+        this.mItem1.getXform().setYPos(-1);
+        this.mItem1BBox = this.mItem1.getBBox();
+    }
+    //道具二：减速
+    if(hBbox.intersectsBound(this.mItem2BBox) || gEngine.Input.isKeyPressed(gEngine.Input.keys.I)){
+        this.kDelta = 0.1;
+        this.mItem2.getXform().setXPos(-1);
+        this.mItem2.getXform().setYPos(-1);
+        this.mItem2BBox = this.mItem2.getBBox();
+    }
+    
+    if(hBbox.intersectsBound(this.mItem3BBox) || gEngine.Input.isKeyPressed(gEngine.Input.keys.O)){
+        this.mGlobalLightSet.getLightAt(0).setIntensity(7);
+        this.mGlobalLightSet.getLightAt(0).setFar(15);
+        this.mItem3.getXform().setXPos(-1);
+        this.mItem3.getXform().setYPos(-1);
+        this.mItem3BBox = this.mItem3.getBBox();
+    }
+    
+    if(hBbox.intersectsBound(this.mItem4BBox) || gEngine.Input.isKeyPressed(gEngine.Input.keys.P)){
+        this.mGlobalLightSet.getLightAt(0).setIntensity(3);
+        this.mGlobalLightSet.getLightAt(0).setNear(3)
+        this.mGlobalLightSet.getLightAt(0).setFar(8);
+        this.mItem4.getXform().setXPos(-1);
+        this.mItem4.getXform().setYPos(-1);
+        this.mItem4BBox = this.mItem4.getBBox();
+    }
+    
+    if(hBbox.intersectsBound(this.mItem5BBox) || gEngine.Input.isKeyPressed(gEngine.Input.keys.L)){
+        
+        var random = Math.random();
+        if(random < 0.33){
+            this.mHero.getXform().setXPos(52);
+            this.mHero.getXform().setYPos(55);
+        }else if(random < 0.667 && random > 0.33){
+            this.mHero.getXform().setXPos(25);
+            this.mHero.getXform().setYPos(85);
+        }else{
+            this.mHero.getXform().setXPos(85);
+            this.mHero.getXform().setYPos(85);
+        }
+        
+        this.mItem5.getXform().setXPos(-1);
+        this.mItem5.getXform().setYPos(-1);
+        this.mItem5BBox = this.mItem5.getBBox();
+    }
 };
